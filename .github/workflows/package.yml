@@ -12,8 +12,11 @@ jobs:
         shell: pwsh
         working-directory: src
         run: |
-          dotnet build Cohesity.Powershell.sln --configuration Release
-          if ($LASTEXITCODE -ne 0) { throw "build failed" }
+          # net451 must finish first: the netcoreapp2.0 build copies its generated help file
+          dotnet build Cohesity.Powershell/Cohesity.Powershell.csproj --configuration Release -f net451
+          if ($LASTEXITCODE -ne 0) { throw "net451 build failed" }
+          dotnet build Cohesity.Powershell/Cohesity.Powershell.csproj --configuration Release -f netcoreapp2.0
+          if ($LASTEXITCODE -ne 0) { throw "netcoreapp2.0 build failed" }
       - name: Stage packages
         shell: pwsh
         working-directory: src/Cohesity.Powershell/bin/Release
