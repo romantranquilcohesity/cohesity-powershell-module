@@ -1,0 +1,33 @@
+name: Package module
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  Package:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Build
+        shell: pwsh
+        working-directory: src
+        run: |
+          dotnet build Cohesity.Powershell.sln --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw "build failed" }
+      - name: Stage packages
+        shell: pwsh
+        working-directory: src/Cohesity.Powershell/bin/Release
+        run: |
+          Copy-Item net451 Cohesity.PowerShell -Recurse
+          Copy-Item netcoreapp2.0 Cohesity.PowerShell.Core -Recurse
+          Get-ChildItem Cohesity.PowerShell, Cohesity.PowerShell.Core | Select-Object FullName | Out-String
+      - name: Upload Cohesity.PowerShell (Windows PowerShell 5.1)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cohesity.PowerShell
+          path: src/Cohesity.Powershell/bin/Release/Cohesity.PowerShell
+      - name: Upload Cohesity.PowerShell.Core (PowerShell 6+)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cohesity.PowerShell.Core
+          path: src/Cohesity.Powershell/bin/Release/Cohesity.PowerShell.Core
