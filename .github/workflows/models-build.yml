@@ -1,0 +1,21 @@
+name: Models build
+on: [push]
+jobs:
+  Models-enum-check:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Build models
+        shell: pwsh
+        run: dotnet build ./src/Cohesity.Powershell.Models/Cohesity.Powershell.Models.csproj -c Release -f net451
+      - name: Deserialize kRecoverAppFiles
+        shell: pwsh
+        run: |
+          $dir = Resolve-Path ./src/Cohesity.Powershell.Models/bin/Release/net451
+          Add-Type -Path "$dir/Newtonsoft.Json.dll"
+          [System.Reflection.Assembly]::LoadFrom("$dir/Cohesity.Models.dll") | Out-Null
+          $json = '[{"type":"kRestoreFiles"},{"type":"kRecoverAppFiles"}]'
+          $tasks = [Newtonsoft.Json.JsonConvert]::DeserializeObject($json, [Cohesity.Model.RestoreTask[]])
+          if ($tasks[1].Type -ne 'KRecoverAppFiles') { throw "kRecoverAppFiles not parsed" }
+          $tasks | ForEach-Object { "OK: $($_.Type)" }
